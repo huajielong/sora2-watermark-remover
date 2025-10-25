@@ -230,4 +230,4 @@ python
 
 ffmpeg/*
 !ffmpeg/.gitkeep
-# !ffmpeg/README.md
+# !ffmpeg/README.mdresources/big-lama.pt

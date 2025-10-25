@@ -81,7 +81,7 @@ If you're using a Python Standalone packaged portable version, you need to confi
 
 > **Note**: The program prioritizes FFmpeg in the local `ffmpeg/` directory. If not found, it will fall back to the system's PATH environment variable.
 
-## 3. Quick Start
+## 3.  Demo
 
 ### 3.1 Command Line Usage
 To have a basic usage, just try the `example.py`:
@@ -160,24 +160,18 @@ You can use the **download URL** from step 2 to retrieve the cleaned video.
 
 ## 5. Datasets
 
-We have uploaded the labelled datasets into huggingface, check this out https://huggingface.co/datasets/LLinked/Sora2-watermark-dataset. Feel free to train your custom detector model or improve our model!
-
-## 7. Documentation Resources
-
-- [产品设计PRD](产品设计PRD.md): Detailed product requirements
-- [技术实现方案](技术实现方案.md): System architecture and technical details
-- [工程项目说明书](工程项目说明书.md): Project structure and development guidelines
+We have uploaded the labelled datasets into huggingface, check this out https://huggingface.co/datasets/LLinked/Sora2-watermark-dataset. Free free to train your custom detector model or improve our model!
 
 ## 6. API
 
 Packaged as a Cog and [published to Replicate](https://replicate.com/uglyrobot/Sora2-watermark-remover) for simple API based usage.
 
-## 8. License
+## 7. License
 
  Apache License
 
 
-## 9. Citation
+## 8. Citation
 
 If you use this project, please cite:
 
@@ -190,7 +184,7 @@ If you use this project, please cite:
 }
 ```
 
-## 10. Acknowledgments
+## 9. Acknowledgments
 
 - [IOPaint](https://github.com/Sanster/IOPaint) for the LAMA implementation
 - [Ultralytics YOLO](https://github.com/ultralytics/ultralytics) for object detection
