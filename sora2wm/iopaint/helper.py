@@ -100,6 +100,8 @@ def handle_error(model_path, model_md5, e):
 
 
 def load_jit_model(url_or_path, device, model_md5: str):
+    #打印日志，提示加载模型
+    logger.info(f"Loading model from: {url_or_path}")
     if os.path.exists(url_or_path):
         model_path = url_or_path
     else:

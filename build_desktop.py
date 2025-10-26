@@ -153,16 +153,8 @@ def copy_dlls():
     # 指定要复制的DLL文件（仅必要的VC++运行时和PyQt5核心DLL）
     # 精简DLL列表，仅包含最核心的必要组件
     dll_patterns = [
-        # 必要的VC++运行时，移除调试版本和冗余版本
-        'vcruntime140.dll',
-        'vcruntime140_1.dll',
         'msvcp140.dll',
         'msvcp140_1.dll',
-        # 最小化的Windows通用运行时
-        'api-ms-win-crt-runtime-l1-1-0.dll',
-        'api-ms-win-crt-math-l1-1-0.dll',
-        'api-ms-win-crt-stdio-l1-1-0.dll',
-        # PyQt5必要的核心DLLs，移除非必需模块
         'Qt5Core.dll',
         'Qt5Gui.dll',
         'Qt5Widgets.dll',

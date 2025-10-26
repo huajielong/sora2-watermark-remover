@@ -12,9 +12,9 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QFileDialog, QProgressBar, QMessageBox,
-    QFrame, QSizePolicy, QLineEdit
+    QFrame, QSizePolicy, QLineEdit, QListWidget, QListWidgetItem, QAbstractItemView
 )
-from PyQt5.QtGui import QPixmap, QIcon, QFont
+from PyQt5.QtGui import QPixmap, QIcon, QFont, QColor
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 
@@ -96,7 +96,7 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         title_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(title_label)
         
-        subtitle_label = QLabel("轻松移除Sora2生成视频中的水印")
+        subtitle_label = QLabel("一键批量轻松移除Sora2水印")
         subtitle_label.setFont(QFont("SimHei", 12))
         subtitle_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(subtitle_label)
@@ -134,11 +134,12 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         
         
         # 创建输入视频预览区域
-        self.input_video_label = QLabel("未选择视频文件")
-        self.input_video_label.setAlignment(Qt.AlignCenter)
-        self.input_video_label.setMinimumHeight(300)
-        self.input_video_label.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
-        main_layout.addWidget(self.input_video_label)
+        self.video_list_widget = QListWidget()
+        self.video_list_widget.setMinimumHeight(300)
+        self.video_list_widget.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
+        self.video_list_widget.setSelectionMode(QAbstractItemView.NoSelection)
+        self.video_list_widget.addItem("未选择视频文件")
+        main_layout.addWidget(self.video_list_widget)
         
         # 创建移除水印按钮
         self.process_button = QPushButton("🚀 移除水印")
@@ -216,10 +217,13 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
             
             self.output_path_edit.setText(str(self.output_path))
             
-            # 显示选中的视频数量
-            self.input_video_label.setText(
-                f"已选择 {len(self.video_queue)} 个视频文件"
-            )
+            # 显示选中的视频文件列表
+            self.video_list_widget.clear()
+            for video_path in self.video_queue:
+                display_path = self.truncate_path(str(video_path))
+                item = QListWidgetItem(display_path)
+                item.setData(Qt.UserRole, str(video_path))  # 存储完整路径
+                self.video_list_widget.addItem(item)
             
             # 启用处理按钮
             self.process_button.setEnabled(True)
@@ -274,12 +278,28 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         self.progress_bar.setValue(progress)
         
         if progress < 50:
-            self.status_label.setText(f"🔍 检测水印中... {progress}%")
+            self.status_label.setText(f"🔍 检测水印中...")
         elif progress < 95:
-            self.status_label.setText(f"🧹 移除水印中... {progress}%")
+            self.status_label.setText(f"🧹 移除水印中...")
         else:
-            self.status_label.setText(f"🎵 合并音频中... {progress}%")
+            self.status_label.setText(f"🎵 合并音频中...")
     
+    def truncate_path(self, path, max_length=50):
+        """截断过长路径，保留文件名，中间用...代替"""
+        if len(path) <= max_length:
+            return path
+        
+        path_obj = Path(path)
+        filename = path_obj.name
+        parent_path = str(path_obj.parent)
+        
+        # 计算需要保留的父路径长度
+        available_length = max_length - len(filename) - 3  # 3 是 "..." 的长度
+        if available_length <= 0:
+            return filename  # 如果文件名本身就很长，只显示文件名
+        
+        return f"{parent_path[:available_length]}...{filename}"
+
     def process_next_video(self):
         """处理队列中的下一个视频"""
         if self.current_video_index >= len(self.video_queue):
@@ -296,7 +316,7 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         
         # 更新状态标签
         self.status_label.setText(
-            f"正在处理: {self.input_path.name}\n🔍 检测水印中... 0%"
+            f"正在处理: {self.input_path.name}\n🔍 检测水印中..."
         )
         self.status_label.setVisible(True)
         
@@ -315,6 +335,12 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         """单个视频处理完成"""
         # 更新当前视频索引
         self.current_video_index += 1
+        
+        # 高亮已处理完成的视频
+        if self.current_video_index - 1 < self.video_list_widget.count():
+            item = self.video_list_widget.item(self.current_video_index - 1)
+            if item:
+                item.setForeground(QColor('#87CEEB'))  # 浅蓝色
         
         # 更新总进度
         self.update_total_progress()
