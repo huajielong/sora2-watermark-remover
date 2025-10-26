@@ -1,6 +1,7 @@
 # Sora2WatermarkRemover
 
-[English](README.md) | 中文
+
+[中文] | English(README-en.md)
 
 这个项目提供了一种优雅的方式来移除 Sora2 生成视频中的 Sora2 水印。
 
@@ -99,25 +100,25 @@ if __name__ == "__main__":
 
 ### 3.2 Web界面
 我们还提供了基于 `streamlit` 的交互式网页界面，使用以下命令尝试：
-
+<img src="resources/app.png" style="zoom: 25%;" />
 ```bash
 streamlit run app.py
 ```
 
 ### 3.3 桌面GUI应用
 现在我们支持基于PyQt5的桌面GUI应用程序，提供与Web界面相同的功能，但具有原生桌面体验：
+<img src="resources/desktop.png" style="zoom: 25%;" />
 
 ```bash
 python desktop.py
 ```
 
-或者在Windows系统上使用提供的批处理脚本：
+或者打包成Windows系统上的可执行文件：
 
 ```bash
-run_gui.bat
+python build_desktop.py
 ```
 
-<img src="resources/app.png" style="zoom: 25%;" />
 
 ## 4. WebServer
 

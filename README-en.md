@@ -1,6 +1,6 @@
 # Sora2WatermarkRemover
 
-English | [中文](README-zh.md)
+English | [中文](README.md)
 
 This project provides an elegant way to remove the Sora2 watermark in the Sora2 generated videos.
 
@@ -170,19 +170,6 @@ Packaged as a Cog and [published to Replicate](https://replicate.com/uglyrobot/S
 
  Apache License
 
-
-## 8. Citation
-
-If you use this project, please cite:
-
-```bibtex
-@misc{Sora2watermarkRemover2025,
-  author = {linkedlist771},
-  title = {Sora2WatermarkRemover},
-  year = {2025},
-  url = {https://github.com/linkedlist771/Sora2WatermarkRemover}
-}
-```
 
 ## 9. Acknowledgments
 
