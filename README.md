@@ -1,71 +1,66 @@
 # Sora2WatermarkRemover
 
-English | [中文](README-zh.md)
+[English](README.md) | 中文
 
-This project provides an elegant way to remove the Sora2 watermark in the Sora2 generated videos.
+这个项目提供了一种优雅的方式来移除 Sora2 生成视频中的 Sora2 水印。
 
 
-- Watermark removed
+- 移除水印后
 
 https://github.com/user-attachments/assets/8cdc075e-7d15-4d04-8fa2-53dd287e5f4c
 
-- Original
+- 原始视频
 
 https://github.com/user-attachments/assets/3c850ff1-b8e3-41af-a46f-2c734406e77d
 
-⭐️: **Yolo weights has been updated, try the new version watermark detect model, it should work better. Also, we have uploaded the labelled datasets into huggingface, check this [dataset](https://huggingface.co/datasets/LLinked/Sora2-watermark-dataset) out. Free free to train your custom detector model or improve our model!**
+⭐️: **YOLO 权重已更新，请尝试新版本的水印检测模型，效果会更好。另外，我们已经将标注好的数据集上传到了 Hugging Face，请查看 https://huggingface.co/datasets/LLinked/Sora2-watermark-dataset。欢迎训练你自己的检测模型或改进我们的模型！**
 
+## 1. 方法
 
-## 1. Method
+Sora2WatermarkRemover（后面我们简称为 `Sora2Wm`）由两部分组成：
 
-The Sora2WatermarkRemover(we call it `Sora2Wm` later) is composed of two parsts:
+- Sora2WaterMarkDetector：我们训练了一个 yolov11s 版本来检测 Sora2 水印。（感谢 YOLO！）
 
-- Sora2WaterMarkDetector: We trained a yolov11s version to detect the Sora2 watermark. (Thank you yolo!)
+- WaterMarkRemover：我们参考了 IOPaint 的实现，使用 LAMA 模型进行水印移除。
 
-- WaterMarkRemover: We refer iopaint's implementation for watermark removal using the lama model.
+  （此代码库来自 https://github.com/Sanster/IOPaint#，感谢他们的出色工作！）
 
-  (This codebase is from https://github.com/Sanster/IOPaint#, thanks for their amazing work!)
+我们的 Sora2Wm 完全由深度学习驱动，在许多生成的视频中都能产生良好的效果。
 
-Our Sora2Wm is purely deeplearning driven and yields good results in many generated videos.
+## 2. 安装
 
+### 2.1 标准安装
 
-
-## 2. Installation
-
-### 2.1 Standard Installation
-
-[FFmpeg](https://ffmpeg.org/) is needed for video processing, please install it first.  We highly recommend using the `uv` to install the environments:
-
-1. installation:
+视频处理需要 [FFmpeg](https://ffmpeg.org/)，请先安装它。我们强烈推荐使用 `uv` 来安装环境：
 
 ```bash
 uv sync
 ```
 
-> now the envs will be installed at the `.ven`, you can activate the env using:
->
+> 现在环境将被安装在 `.venv` 目录下，你可以使用以下命令激活环境：
+> 
 > ```bash
 > source .venv/bin/activate
 > ```
 
-2. Downloaded the pretrained models:
+2. 下载预训练模型：
 
-The trained yolo weights will be stored in the `resources` dir as the `best.pt`.  And it will be automatically download from https://github.com/linkedlist771/Sora2WatermarkRemover/releases/download/V0.0.1/best.pt . The `Lama` model is downloaded from https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt, and will be stored in the torch cache dir. Both downloads are automatic, if you fail, please check your internet status.
+训练好的 YOLO 权重将存储在 `resources` 目录中，文件名为 `best.pt`。它将从 https://github.com/linkedlist771/Sora2WatermarkRemover/releases/download/V0.0.1/best.pt 自动下载。`Lama` 模型从 https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt 下载，并将存储在 torch 缓存目录中。两者都是自动下载的，如果失败，请检查你的网络状态。
 
-### 2.2 Windows Portable Version Configuration
+### 2.2 Windows 便携版配置
 
-If you're using a Python Standalone packaged portable version, you need to configure local FFmpeg:
+如果你使用 Python Standalone 打包的便携版本，需要配置本地的 FFmpeg：
 
-1. **Download FFmpeg**:
-   - Visit: https://github.com/BtbN/FFmpeg-Builds/releases
-   - Download the latest `ffmpeg-master-latest-win64-gpl.zip`
-   - Extract the archive
+1. **下载 FFmpeg**：
+   - 访问：https://github.com/BtbN/FFmpeg-Builds/releases
+   - 下载最新的 `ffmpeg-master-latest-win64-gpl.zip`
+   - 解压缩文件
 
-2. **Place FFmpeg Files**:
-   - Copy `bin/ffmpeg.exe` from the extracted folder to the project's `ffmpeg/` directory
-   - Copy `bin/ffprobe.exe` from the extracted folder to the project's `ffmpeg/` directory
+2. **放置 FFmpeg 文件**：
+   - 将解压后的 `bin/ffmpeg.exe` 复制到项目的 `ffmpeg/` 目录
+   - 将解压后的 `bin/ffprobe.exe` 复制到项目的 `ffmpeg/` 目录
    
-   Final directory structure:
+   最终目录结构：
    ```
    Sora2WatermarkRemover/
    ├── ffmpeg/
@@ -75,16 +70,16 @@ If you're using a Python Standalone packaged portable version, you need to confi
    └── ...
    ```
 
-3. **Verify Configuration**:
-   - The program will automatically detect and use FFmpeg from the `ffmpeg/` directory on startup
-   - If local FFmpeg is detected, you'll see "✓ FFmpeg已就绪" in the logs
+3. **验证配置**：
+   - 程序启动时会自动检测并使用 `ffmpeg/` 目录中的 FFmpeg
+   - 如果检测到本地 FFmpeg，将在日志中显示 "✓ FFmpeg已就绪"
 
-> **Note**: The program prioritizes FFmpeg in the local `ffmpeg/` directory. If not found, it will fall back to the system's PATH environment variable.
+> **注意**：程序会优先使用本地 `ffmpeg/` 目录中的 FFmpeg，如果没有找到，则使用系统环境变量中的 FFmpeg。
 
-## 3.  Demo
+## 3. 快速开始
 
-### 3.1 Command Line Usage
-To have a basic usage, just try the `example.py`:
+### 3.1 命令行使用
+基本用法，只需尝试 `example.py`：
 
 ```python
 
@@ -102,21 +97,21 @@ if __name__ == "__main__":
 
 ```
 
-### 3.2 Web Interface
-We also provide you with a `streamlit` based interactive web page, try it with:
+### 3.2 Web界面
+我们还提供了基于 `streamlit` 的交互式网页界面，使用以下命令尝试：
 
 ```bash
 streamlit run app.py
 ```
 
-### 3.3 Desktop GUI
-We now support a desktop GUI application powered by PyQt5, providing the same functionality as the web interface but with a native desktop experience:
+### 3.3 桌面GUI应用
+现在我们支持基于PyQt5的桌面GUI应用程序，提供与Web界面相同的功能，但具有原生桌面体验：
 
 ```bash
 python desktop.py
 ```
 
-Or use the provided batch script for Windows:
+或者在Windows系统上使用提供的批处理脚本：
 
 ```bash
 run_gui.bat
@@ -124,56 +119,54 @@ run_gui.bat
 
 <img src="resources/app.png" style="zoom: 25%;" />
 
-## **4. WebServer**
+## 4. WebServer
 
-Here, we provide a **FastAPI-based web server** that can quickly turn this watermark remover into a service.
+在这里，我们提供了一个基于 FastAPI 的 Web 服务器，可以快速将这个水印清除器转换为服务。
 
-Simply run:
+只需运行：
 
-```
+```python
 python start_server.py
 ```
 
-The web server will start on port **5344**.
+Web 服务器将在端口 `5344` 启动，你可以查看 FastAPI [文档](http://localhost:5344/docs) 了解详情，有三个路由：
 
-You can view the FastAPI [documentation](http://localhost:5344/docs) for more details.
+1. submit_remove_task:
 
-There are three routes available:
+   > 上传视频后，会返回一个任务 ID，该视频将立即被处理。
 
-1. **submit_remove_task**
+   <img src="resources/53abf3fd-11a9-4dd7-a348-34920775f8ad.png" alt="image" style="zoom: 25%;" />
 
-   > After uploading a video, a task ID will be returned, and the video will begin processing immediately.
+2. get_results:
 
-<img src="resources/53abf3fd-11a9-4dd7-a348-34920775f8ad.png" alt="image" style="zoom: 25%;" />
+你可以使用上面的任务 ID 检索任务状态，它会显示视频处理的百分比。一旦完成，返回的数据中会有下载 URL。
 
-2. **get_results**
+3. downlaod:
 
-You can use the task ID obtained above to check the task status.
+你可以使用第2步中的下载 URL 来获取清理后的视频。
 
-It will display the percentage of video processing completed.
+## 5. 数据集
 
-Once finished, the returned data will include a **download URL**.
-
-3. **download**
-
-You can use the **download URL** from step 2 to retrieve the cleaned video.
-
-## 5. Datasets
-
-We have uploaded the labelled datasets into huggingface, check this out https://huggingface.co/datasets/LLinked/Sora2-watermark-dataset. Free free to train your custom detector model or improve our model!
+我们已经将标注好的数据集上传到了 Hugging Face，请查看 https://huggingface.co/datasets/LLinked/Sora2-watermark-dataset。欢迎训练你自己的检测模型或改进我们的模型！
 
 ## 6. API
 
-Packaged as a Cog and [published to Replicate](https://replicate.com/uglyrobot/Sora2-watermark-remover) for simple API based usage.
+打包为 Cog 并[发布到 Replicate](https://replicate.com/uglyrobot/Sora2-watermark-remover)，便于基于 API 的简单使用。
 
-## 7. License
+## 7. 文档资源
 
- Apache License
+- [产品设计PRD](产品设计PRD.md)：详细的产品需求说明
+- [技术实现方案](技术实现方案.md)：系统架构和技术细节
+- [工程项目说明书](工程项目说明书.md)：项目结构和开发指南
+
+## 8. 许可证
+
+Apache License
 
 
-## 8. Citation
+## 9. 引用
 
-If you use this project, please cite:
+如果你使用了这个项目，请引用：
 
 ```bibtex
 @misc{Sora2watermarkRemover2025,
@@ -184,7 +177,7 @@ If you use this project, please cite:
 }
 ```
 
-## 9. Acknowledgments
+## 10. 致谢
 
-- [IOPaint](https://github.com/Sanster/IOPaint) for the LAMA implementation
-- [Ultralytics YOLO](https://github.com/ultralytics/ultralytics) for object detection
+- [IOPaint](https://github.com/Sanster/IOPaint) 提供的 LAMA 实现
+- [Ultralytics YOLO](https://github.com/ultralytics/ultralytics) 提供的目标检测
