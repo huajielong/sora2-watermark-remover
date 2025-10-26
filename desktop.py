@@ -7,7 +7,6 @@ Sora2水印清除器桌面应用
 
 import sys
 import os
-import tempfile
 from pathlib import Path
 
 from PyQt5.QtWidgets import (
@@ -17,8 +16,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap, QIcon, QFont
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from PyQt5.QtMultimediaWidgets import QVideoWidget
+
 
 from sora2wm.core import Sora2WM  # 导入水印清除核心类
 
@@ -311,23 +309,7 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         self.processing_thread.error.connect(self.processing_error)
         self.processing_thread.start()
 
-    def processing_error(self, error_message):
-        """处理出错时的回调函数"""
-        # 清理临时目录
-        if self.tmp_dir:
-            self.tmp_dir.cleanup()
-            self.tmp_dir = None
-        
-        # 显示错误消息
-        QMessageBox.critical(
-            self, "处理失败", 
-            f"处理视频时出错: {error_message}\n\n将继续处理队列中的下一个视频"
-        )
-        
-        # 更新当前视频索引并继续处理下一个
-        self.current_video_index += 1
-        self.update_total_progress()
-        self.process_next_video()
+
 
     def video_processed(self, output_path):
         """单个视频处理完成"""
@@ -356,11 +338,6 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         
     def processing_error(self, error_message):
         """处理出错时的回调函数"""
-        # 清理临时目录
-        if self.tmp_dir:
-            self.tmp_dir.cleanup()
-            self.tmp_dir = None
-        
         # 更新UI状态
         self.progress_bar.setVisible(False)
         self.status_label.setVisible(False)
