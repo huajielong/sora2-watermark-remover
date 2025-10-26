@@ -50,8 +50,9 @@ def setup_ffmpeg_path():
             logger.info(f"已将ffmpeg目录添加到PATH: {ffmpeg_dir_str}")
         
         # 显式设置FFMPEG和FFPROBE的路径（某些库会使用这些环境变量）
-        os.environ["FFMPEG_BINARY"] = str(local_ffmpeg_path.absolute())
-        os.environ["FFPROBE_BINARY"] = str(local_ffprobe_path.absolute())
+        # 移除环境变量设置以避免与ffmpeg-python冲突
+        # os.environ["FFMPEG_BINARY"] = str(local_ffmpeg_path.absolute())
+        # os.environ["FFPROBE_BINARY"] = str(local_ffprobe_path.absolute())
         
         logger.success("FFmpeg配置成功 (使用本地版本)")
         return True

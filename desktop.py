@@ -13,7 +13,7 @@ from pathlib import Path
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QFileDialog, QProgressBar, QMessageBox,
-    QFrame, QSizePolicy
+    QFrame, QSizePolicy, QLineEdit
 )
 from PyQt5.QtGui import QPixmap, QIcon, QFont
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
@@ -70,6 +70,7 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         self.Sora2_wm = None  # Sora2WM实例
         self.input_path = None  # 输入视频路径
         self.output_path = None  # 输出视频路径
+
         self.tmp_dir = None  # 临时目录
         self.processing_thread = None  # 处理线程
     
@@ -111,6 +112,26 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         select_button.clicked.connect(self.select_video)
         main_layout.addWidget(select_button)
         
+        # 输出路径选择
+        self.output_path_edit = QLineEdit()
+        self.output_path_edit.setReadOnly(True)
+        self.browse_btn = QPushButton("浏览...")
+        self.browse_btn.clicked.connect(self.select_output_directory)
+        output_layout = QHBoxLayout()
+        output_label = QLabel("输出路径:")
+        output_layout.addWidget(output_label)
+        output_layout.addWidget(self.output_path_edit)
+        output_layout.addWidget(self.browse_btn)
+        main_layout.addLayout(output_layout)
+
+        
+        # 添加分隔线
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        main_layout.addWidget(line)
+        
+        
         # 创建输入视频预览区域
         self.input_video_label = QLabel("未选择视频文件")
         self.input_video_label.setAlignment(Qt.AlignCenter)
@@ -136,30 +157,15 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         self.status_label.setVisible(False)
         main_layout.addWidget(self.status_label)
         
-        # 创建处理结果区域
-        result_group = QVBoxLayout()
-        result_title = QLabel("处理结果")
-        result_title.setFont(QFont("SimHei", 16, QFont.Bold))
-        result_group.addWidget(result_title)
+
         
-        self.result_video_label = QLabel("处理后的视频将在这里显示")
-        self.result_video_label.setAlignment(Qt.AlignCenter)
-        self.result_video_label.setMinimumHeight(300)
-        self.result_video_label.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
-        result_group.addWidget(self.result_video_label)
-        
-        self.save_button = QPushButton("💾 保存清除后的视频")
-        self.save_button.setFont(QFont("SimHei", 12))
-        self.save_button.setEnabled(False)
-        self.save_button.clicked.connect(self.save_result)
-        result_group.addWidget(self.save_button)
-        
-        main_layout.addLayout(result_group)
-        
-        # 创建底部信息
-        footer_label = QLabel("使用 PyQt5 和 AI 制作 ❤️")
-        footer_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(footer_label)
+
+    
+    def select_output_directory(self):
+        directory = QFileDialog.getExistingDirectory(self, "选择输出目录")
+        if directory:
+            self.output_path = Path(directory)
+            self.output_path_edit.setText(directory)
     
     def select_video(self):
         """选择视频文件"""
@@ -171,6 +177,10 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         
         if file_path:
             self.input_path = Path(file_path)
+        # 设置默认输出路径
+        if not self.output_path:
+            self.output_path = self.input_path.parent
+            self.output_path_edit.setText(str(self.output_path))
             self.input_video_label.setText(f"已选择: {self.input_path.name}")
             
             # 显示视频基本信息
@@ -216,13 +226,14 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         if not self.input_path or not self.Sora2_wm:
             return
         
-        # 创建临时目录
-        self.tmp_dir = tempfile.TemporaryDirectory()
-        tmp_path = Path(self.tmp_dir.name)
-        
-        # 设置输出文件路径
-        output_filename = f"cleaned_{self.input_path.name}"
-        self.output_path = tmp_path / output_filename
+        # 设置输出文件路径（保存到原文件所在目录）
+        # 如果用户设置了输出目录则使用，否则默认使用输入目录
+        if self.output_path:
+            output_dir = Path(self.output_path)
+        else:
+            output_dir = self.input_path.parent
+        output_filename = f"{self.input_path.stem}_cleaned{self.input_path.suffix}"
+        self.output_path = output_dir / output_filename
         
         # 禁用按钮，显示进度条
         self.process_button.setEnabled(False)
@@ -254,20 +265,11 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
     def processing_finished(self, output_path):
         """处理完成时的回调函数"""
         # 更新UI状态
+        self.process_button.setEnabled(True)
         self.progress_bar.setValue(100)
         self.status_label.setText("✅ 处理完成!")
         
-        # 更新结果显示
-        self.result_video_label.setText(f"处理完成: {Path(output_path).name}")
-        
-        # 启用保存按钮
-        self.save_button.setEnabled(True)
-        
-        # 显示成功消息
-        QMessageBox.information(
-            self, "处理完成", 
-            "视频水印已成功移除！请点击保存按钮保存结果。"
-        )
+
     
     def processing_error(self, error_message):
         """处理出错时的回调函数"""
@@ -287,44 +289,10 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
             f"处理视频时出错: {error_message}"
         )
     
-    def save_result(self):
-        """保存处理后的视频"""
-        if not self.output_path or not self.output_path.exists():
-            QMessageBox.warning(
-                self, "保存失败", 
-                "没有找到处理后的视频文件！"
-            )
-            return
-        
-        # 获取保存路径
-        default_filename = f"cleaned_{self.input_path.name}"
-        save_path, _ = QFileDialog.getSaveFileName(
-            self, "保存视频文件", default_filename, 
-            "视频文件 (*.mp4 *.avi *.mov *.mkv)"
-        )
-        
-        if save_path:
-            try:
-                # 复制文件
-                import shutil
-                shutil.copy2(self.output_path, save_path)
-                
-                QMessageBox.information(
-                    self, "保存成功", 
-                    f"视频已成功保存到: {save_path}"
-                )
-            except Exception as e:
-                QMessageBox.critical(
-                    self, "保存失败", 
-                    f"保存视频时出错: {str(e)}"
-                )
+
     
     def closeEvent(self, event):
         """窗口关闭事件处理"""
-        # 清理临时目录
-        if self.tmp_dir:
-            self.tmp_dir.cleanup()
-        
         # 停止处理线程
         if self.processing_thread and self.processing_thread.isRunning():
             self.processing_thread.terminate()
