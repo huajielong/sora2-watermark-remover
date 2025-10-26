@@ -68,10 +68,13 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         super().__init__()
         self.init_ui()
         self.Sora2_wm = None  # Sora2WM实例
-        self.input_path = None  # 输入视频路径
-        self.output_path = None  # 输出视频路径
+        self.input_path = None  # 当前处理的视频路径
+        self.output_path = None  # 输出目录
+        self.video_queue = []  # 视频处理队列
+        self.current_video_index = 0  # 当前处理视频索引
+        self.current_output_path = None  # 当前视频输出路径
 
-        self.tmp_dir = None  # 临时目录
+
         self.processing_thread = None  # 处理线程
     
     def init_ui(self):
@@ -146,6 +149,11 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         self.process_button.clicked.connect(self.process_video)
         main_layout.addWidget(self.process_button)
         
+        # 创建总进度标签
+        self.total_progress_label = QLabel("总进度: 0/0")
+        self.total_progress_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.total_progress_label)
+        
         # 创建进度条和状态文本
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
@@ -156,11 +164,26 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setVisible(False)
         main_layout.addWidget(self.status_label)
-        
-
-        
-
     
+    def find_common_path(self, paths):
+        """查找多个路径的公共目录"""
+        if not paths:
+            return None
+        
+        # 从第一个路径开始
+        common_path = paths[0].parent
+        
+        for path in paths[1:]:
+            # 比较当前公共路径和下一个路径的父目录
+            while not path.parent.is_relative_to(common_path):
+                common_path = common_path.parent
+                
+                # 如果已经到达根目录，停止查找
+                if common_path == common_path.parent:
+                    return None
+        
+        return common_path
+
     def select_output_directory(self):
         directory = QFileDialog.getExistingDirectory(self, "选择输出目录")
         if directory:
@@ -169,24 +192,35 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
     
     def select_video(self):
         """选择视频文件"""
-        # 打开文件对话框
-        file_path, _ = QFileDialog.getOpenFileName(
+        # 打开文件对话框，支持多选
+        file_paths, _ = QFileDialog.getOpenFileNames(
             self, "选择视频文件", "", 
             "视频文件 (*.mp4 *.avi *.mov *.mkv)"
         )
         
-        if file_path:
-            self.input_path = Path(file_path)
-        # 设置默认输出路径
-        if not self.output_path:
-            self.output_path = self.input_path.parent
-            self.output_path_edit.setText(str(self.output_path))
-            self.input_video_label.setText(f"已选择: {self.input_path.name}")
+        if file_paths:
+            # 转换为Path对象列表
+            self.video_queue = [Path(fp) for fp in file_paths]
+            self.current_video_index = 0
             
-            # 显示视频基本信息
-            file_size = os.path.getsize(file_path) / (1024 * 1024)  # 转换为MB
+            # 找出公共路径
+            common_path = self.find_common_path(self.video_queue)
+            
+            if common_path:
+                self.output_path = common_path
+            else:
+                # 没有公共路径，使用最后一个视频的路径
+                self.output_path = self.video_queue[-1].parent
+                QMessageBox.information(
+                    self, "提示", 
+                    f"未找到公共输出路径，已默认使用最后一个视频的路径：\n{self.output_path}"
+                )
+            
+            self.output_path_edit.setText(str(self.output_path))
+            
+            # 显示选中的视频数量
             self.input_video_label.setText(
-                f"已选择: {self.input_path.name}\n文件大小: {file_size:.2f} MB"
+                f"已选择 {len(self.video_queue)} 个视频文件"
             )
             
             # 启用处理按钮
@@ -222,34 +256,20 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
             )
     
     def process_video(self):
-        """处理视频，移除水印"""
-        if not self.input_path or not self.Sora2_wm:
+        """开始处理视频队列"""
+        if not self.video_queue or not self.Sora2_wm:
             return
-        
-        # 设置输出文件路径（保存到原文件所在目录）
-        # 如果用户设置了输出目录则使用，否则默认使用输入目录
-        if self.output_path:
-            output_dir = Path(self.output_path)
-        else:
-            output_dir = self.input_path.parent
-        output_filename = f"{self.input_path.stem}_cleaned{self.input_path.suffix}"
-        self.output_path = output_dir / output_filename
         
         # 禁用按钮，显示进度条
         self.process_button.setEnabled(False)
         self.progress_bar.setValue(0)
         self.progress_bar.setVisible(True)
-        self.status_label.setText("🔍 检测水印中... 0%")
-        self.status_label.setVisible(True)
         
-        # 创建并启动处理线程
-        self.processing_thread = ProcessingThread(
-            self.Sora2_wm, self.input_path, self.output_path
-        )
-        self.processing_thread.progress_update.connect(self.update_progress)
-        self.processing_thread.finished.connect(self.processing_finished)
-        self.processing_thread.error.connect(self.processing_error)
-        self.processing_thread.start()
+        # 更新总进度标签
+        self.update_total_progress()
+        
+        # 开始处理第一个视频
+        self.process_next_video()
     
     def update_progress(self, progress):
         """更新进度条和状态文本"""
@@ -262,15 +282,78 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
         else:
             self.status_label.setText(f"🎵 合并音频中... {progress}%")
     
-    def processing_finished(self, output_path):
-        """处理完成时的回调函数"""
-        # 更新UI状态
-        self.process_button.setEnabled(True)
-        self.progress_bar.setValue(100)
-        self.status_label.setText("✅ 处理完成!")
+    def process_next_video(self):
+        """处理队列中的下一个视频"""
+        if self.current_video_index >= len(self.video_queue):
+            # 所有视频处理完成
+            self.all_videos_processed()
+            return
         
+        # 获取当前要处理的视频
+        self.input_path = self.video_queue[self.current_video_index]
+        
+        # 设置输出文件路径
+        output_filename = f"{self.input_path.stem}_cleaned{self.input_path.suffix}"
+        self.current_output_path = self.output_path / output_filename
+        
+        # 更新状态标签
+        self.status_label.setText(
+            f"正在处理: {self.input_path.name}\n🔍 检测水印中... 0%"
+        )
+        self.status_label.setVisible(True)
+        
+        # 创建并启动处理线程
+        self.processing_thread = ProcessingThread(
+            self.Sora2_wm, self.input_path, self.current_output_path
+        )
+        self.processing_thread.progress_update.connect(self.update_progress)
+        self.processing_thread.finished.connect(self.video_processed)
+        self.processing_thread.error.connect(self.processing_error)
+        self.processing_thread.start()
 
-    
+    def processing_error(self, error_message):
+        """处理出错时的回调函数"""
+        # 清理临时目录
+        if self.tmp_dir:
+            self.tmp_dir.cleanup()
+            self.tmp_dir = None
+        
+        # 显示错误消息
+        QMessageBox.critical(
+            self, "处理失败", 
+            f"处理视频时出错: {error_message}\n\n将继续处理队列中的下一个视频"
+        )
+        
+        # 更新当前视频索引并继续处理下一个
+        self.current_video_index += 1
+        self.update_total_progress()
+        self.process_next_video()
+
+    def video_processed(self, output_path):
+        """单个视频处理完成"""
+        # 更新当前视频索引
+        self.current_video_index += 1
+        
+        # 更新总进度
+        self.update_total_progress()
+        
+        # 处理下一个视频
+        self.process_next_video()
+
+    def all_videos_processed(self):
+        """所有视频处理完成"""
+        self.progress_bar.setVisible(False)
+        self.status_label.setText(f"✅ 所有 {len(self.video_queue)} 个视频处理完成!")
+        
+        # 启用处理按钮
+        self.process_button.setEnabled(True)
+
+    def update_total_progress(self):
+        """更新总进度显示"""
+        total = len(self.video_queue)
+        processed = self.current_video_index
+        self.total_progress_label.setText(f"总进度: {processed}/{total}")
+        
     def processing_error(self, error_message):
         """处理出错时的回调函数"""
         # 清理临时目录
@@ -288,8 +371,6 @@ class Sora2WatermarkRemoverGUI(QMainWindow):
             self, "处理失败", 
             f"处理视频时出错: {error_message}"
         )
-    
-
     
     def closeEvent(self, event):
         """窗口关闭事件处理"""
