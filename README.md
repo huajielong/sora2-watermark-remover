@@ -165,20 +165,7 @@ Web 服务器将在端口 `5344` 启动，你可以查看 FastAPI [文档](http:
 Apache License
 
 
-## 9. 引用
-
-如果你使用了这个项目，请引用：
-
-```bibtex
-@misc{Sora2watermarkRemover2025,
-  author = {linkedlist771},
-  title = {Sora2WatermarkRemover},
-  year = {2025},
-  url = {https://github.com/linkedlist771/Sora2WatermarkRemover}
-}
-```
-
-## 10. 致谢
+## 9. 致谢
 
 - [IOPaint](https://github.com/Sanster/IOPaint) 提供的 LAMA 实现
 - [Ultralytics YOLO](https://github.com/ultralytics/ultralytics) 提供的目标检测
