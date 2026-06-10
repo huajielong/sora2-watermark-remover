@@ -1,9 +1,3 @@
-<p align="center">
-  ⭐ If this project helps you, please give it a Star!
-</p>
-
----
-
 <h1 align="center">🎬 Sora2 Watermark Remover — Sora2视频水印一键移除</h1>
 <p align="center"><b>基于YOLOv11+LAMA的Sora2视频水印一键移除工具 — 支持命令行/Web/桌面GUI/Web服务四种模式</b></p>
 
