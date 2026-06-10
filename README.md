@@ -20,6 +20,8 @@
   <a href="#-faq">❓ FAQ</a>
 </p>
 
+> [中文说明](README.zh.md)
+
 ---
 
 ## 🤔 Tired of Manually Removing Watermarks Frame by Frame?
@@ -290,5 +292,3 @@ Apache 2.0 © [huajielong](https://github.com/huajielong)
 <p align="center">
   ⭐ If this project helps you, please give it a Star!
 </p>
-
-> [中文说明](README.zh.md)
